@@ -1,0 +1,13 @@
+[package]
+name = "opticache"
+version = "0.1.0"
+authors = ["exfalso <0slemi0@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+libc = "=0.2.80"
+clap = "=2.33.3"
+log = "=0.4.11"
+env_logger = "=0.7.1"
+chrono = "=0.4.19"

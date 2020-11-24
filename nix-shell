@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# A bit of a hack to speed up the ./nix-shell invocation. We basically want to avoid an internet roundtrip in the happy
+# path when the pinned nixpkgs is already in /nix/store
+NIXPKGS_PIN="$(cat "${SCRIPT_DIR}/nix/NIXPKGS_PIN")"
+PIN_PATH="${SCRIPT_DIR}/build/nixpkgs-${NIXPKGS_PIN}"
+if [[ ! -e "$PIN_PATH" ]]; then
+  nix-build -I nixpkgs="https://github.com/NixOS/nixpkgs/archive/$NIXPKGS_PIN.tar.gz" -o "$PIN_PATH" "${SCRIPT_DIR}/nix/nixpkgs-src.nix"
+fi
+
+CACHED_NIX_SHELL_PIN="$(cat "${SCRIPT_DIR}/nix/CACHED_NIX_SHELL_PIN")"
+CACHED_NIX_SHELL="${SCRIPT_DIR}/build/cached-nix-shell-${NIXPKGS_PIN}-${CACHED_NIX_SHELL_PIN}/bin/cached-nix-shell"
+if [[ ! -e "$CACHED_NIX_SHELL" ]]; then
+  nix-build -I nixpkgs="$PIN_PATH" -o "${SCRIPT_DIR}/build/cached-nix-shell-${NIXPKGS_PIN}-${CACHED_NIX_SHELL_PIN}" "${SCRIPT_DIR}"/nix/cached-nix-shell.nix
+fi
+
+exec "$CACHED_NIX_SHELL" -I nixpkgs=${PIN_PATH} "${SCRIPT_DIR}/nix/shell.nix" "$@"
